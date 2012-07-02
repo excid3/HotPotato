@@ -42,6 +42,7 @@ module HotPotato
           log.fatal $!
           log.fatal $@.join("\n")
           log.fatal "\n"
+          @@error_block.call($!, $@) if @@error_block
           exit 1
         end
       else

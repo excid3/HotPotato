@@ -7,6 +7,10 @@ module HotPotato
 
     CONFIG_PATH = "#{APP_PATH}/config/config.yml"
 
+    def self.on_error(&block)
+      @@error_block = block
+    end
+
     def set_logger(provider, options = {})
       if provider == :queue_logger
         @@log ||= QueueLogger.new(options)
