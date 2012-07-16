@@ -34,6 +34,7 @@ module HotPotato
       @options      = load_options
       @options.mode = parse_options 
       trap("INT") { shutdown }
+      trap("TERM") { shutdown }
       self.send(@options.mode)
     end
         
