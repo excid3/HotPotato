@@ -3,23 +3,23 @@ require 'optparse'
 require 'socket'
 
 module HotPotato
-  
+
   # The supervisor is a process that runs on each machine that participates in the cluster.
   # When it starts it does the following:
-  # 
+  #
   # 0. Read the routes file
   # 1. Connect to the Redis server and get the appTask process ID table
   # 2. Acquire the global lock
   # 3. If a process is needed, fork a new process for AppTask
   # 4. Release the global lock
   # 5. Rinse and Repeat
-  # 
+  #
   # The supervisor also starts the Heartbeat service and logging service as background threads.
-  # 
+  #
   # The supervisor can be managed from the command line:
-  # 
+  #
   #     $ bin/supervisor [run|start|stop|restart]
-  # 
+  #
   # If started without any settings, it will default to run.
   class SupervisorServer
 
@@ -29,15 +29,15 @@ module HotPotato
     HEARTBEAT_INTERVAL = 20
     PID_FILE           = "#{APP_PATH}/tmp/supervisor.pid"
     LOG_FILE           = "#{APP_PATH}/logs/supervisor.log"
-    
+
     def initialize
       @options      = load_options
-      @options.mode = parse_options 
+      @options.mode = parse_options
       trap("INT") { shutdown }
       trap("TERM") { shutdown }
       self.send(@options.mode)
     end
-        
+
     def run
       $0 = "Hot Potato Supervisor"
       log.info "Starting Hot Potato Supervisor #{HotPotato::VERSION}"
@@ -45,9 +45,9 @@ module HotPotato
         start_heartbeat_service
         start_log_service
         routes = HotPotato::Route.routes
-        while @options.running do       
+        while @options.running do
           if acquire_lock :supervisor
-            log.debug "Lock acquired"          
+            log.debug "Lock acquired"
             routes.app_tasks.each do |app_task|
               if app_task.running_instances < app_task.instances && app_task.allow_group(@options.group)
                 if has_capacity
@@ -62,8 +62,8 @@ module HotPotato
                   log.warn "Cannot start AppTask [#{app_task.classname}] - Server at Capacity (Increase max_app_tasks)"
                 end
               end
-            end            
-            release_lock :supervisor        
+            end
+            release_lock :supervisor
           end
           sleep (5 + rand(5))
         end
@@ -73,8 +73,8 @@ module HotPotato
         log.error $@
         exit 1
       end
-    end    
-    
+    end
+
     def start
       # Check if we are running
       if File.exists?(PID_FILE)
@@ -93,7 +93,7 @@ module HotPotato
       Process.daemon
       File.open(PID_FILE, 'w') do |f|
         f.write "#{Process.pid}\n"
-      end    
+      end
       STDIN.reopen '/dev/null'
       STDOUT.reopen ("#{APP_PATH}/#{config['supervisor_log']}" || LOG_FILE), 'a'
       STDERR.reopen STDOUT
@@ -101,16 +101,16 @@ module HotPotato
       STDERR.sync = true
       run
     end
-    
+
     # Stops the Supervisor.  Requires the existance of a PID file.
     # Calls the shutdown hook to stop AppTasks.
     def stop
       pid = 0
-      shutdown      
+      shutdown
       if File.exists?(PID_FILE)
         File.open(PID_FILE, 'r') do |f|
           pid = f.read.to_i
-        end              
+        end
         Process.kill("INT", pid) if Process.alive?(pid)
         File.delete(PID_FILE)
       else
@@ -118,14 +118,14 @@ module HotPotato
         exit 1
       end
     end
-    
+
     # Restarts the Supervisor
     def restart
       stop
       sleep 2
       start
     end
-    
+
     def parse_options
       mode = :run
       op = OptionParser.new do |opts|
@@ -148,8 +148,8 @@ module HotPotato
       end
       return mode
     end
-    
-    # Kills any running AppTasks on this machine and removes entries from the 
+
+    # Kills any running AppTasks on this machine and removes entries from the
     # process table cache.  Removes entry for the supervisor in the process
     # table cache.
     def shutdown
@@ -171,13 +171,13 @@ module HotPotato
       end
       log.info "Stopping Supervisor..."
     end
-   
+
     # Determines if this host reached the limit of the number of AppTasks it
     # can run
     def has_capacity
       return stat.keys("hotpotato.apptask.#{@options.hostname}.*").count < @options.max_app_tasks
     end
-    
+
     # OK, this is not really a log service, but it is responsible for subscribing to the log messages
     # from the AppTasks on this server.
     def start_log_service
@@ -193,7 +193,7 @@ module HotPotato
         end
       end
     end
-    
+
     # Starts a background thread to update the process list in redis.
     def start_heartbeat_service
       si = SupervisorInfo.new
@@ -218,7 +218,7 @@ module HotPotato
       options.mode          = :run
       options.hostname      = Socket.gethostname
       options.running       = true
-      
+
       if config["servers"]
         config["servers"].each do |server|
           if server["hostname"] == options.hostname
