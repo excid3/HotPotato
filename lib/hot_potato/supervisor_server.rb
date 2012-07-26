@@ -153,15 +153,21 @@ module HotPotato
     # process table cache.  Removes entry for the supervisor in the process
     # table cache.
     def shutdown
-      @options.running = false      
-      stat.keys("hotpotato.apptask.#{@options.hostname}.*").each do |app_task_key|
-        app_task = JSON.parse(stat.get(app_task_key))
+      @options.running = false
+      keys =  stat.keys("hotpotato.apptask.#{@options.hostname}.*")
+      keys =  stat.keys("hotpotato.apptask.#{@options.hostname}.*")
+      keys.each do |app_task_key|
+        value = stat.get(app_task_key)
+        value = stat.get(app_task_key)
+        app_task = JSON.parse(value)
         log.info "Killing PID #{app_task.pid} [#{app_task.classname}]"
         Process.kill("INT", app_task.pid) if Process.alive?(app_task.pid)
         stat.del app_task_key
       end
+
+      stat.keys("hotpotato.supervisor.#{@options.hostname}.*")
       stat.keys("hotpotato.supervisor.#{@options.hostname}.*").each do |supervisor_key|
-        stat.del supervisor_key
+        stat.del supervisor_key if supervisor_key
       end
       log.info "Stopping Supervisor..."
     end
