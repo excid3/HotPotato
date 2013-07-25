@@ -160,8 +160,8 @@ module HotPotato
         value = stat.get(app_task_key)
         value = stat.get(app_task_key)
         app_task = JSON.parse(value)
-        log.info "Killing PID #{app_task.pid} [#{app_task.classname}]"
-        Process.kill("INT", app_task.pid) if Process.alive?(app_task.pid)
+        log.info "Killing PID #{app_task["pid"]} [#{app_task["classname"]}]"
+        Process.kill("INT", app_task["pid"]) if Process.alive?(app_task["pid"])
         stat.del app_task_key
       end
 
